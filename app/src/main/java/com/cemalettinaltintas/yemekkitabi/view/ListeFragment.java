@@ -1,4 +1,4 @@
-package com.cemalettinaltintas.yemekkitabi;
+package com.cemalettinaltintas.yemekkitabi.view;
 
 import android.os.Bundle;
 
@@ -6,20 +6,28 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
+import androidx.room.Room;
+
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.cemalettinaltintas.yemekkitabi.databinding.FragmentListeBinding;
+import com.cemalettinaltintas.yemekkitabi.roomdb.TarifDao;
+import com.cemalettinaltintas.yemekkitabi.roomdb.TarifDatabase;
+
 
 public class ListeFragment extends Fragment {
     private FragmentListeBinding binding;
+    TarifDao tarifDao;
+    TarifDatabase db;
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        db= Room.databaseBuilder(requireContext(),TarifDatabase.class,"Tarifler").build();
+        tarifDao=db.tarifDao();
     }
-
     @Override
     public View onCreateView (LayoutInflater inflater,
                               ViewGroup container,
@@ -38,6 +46,7 @@ public class ListeFragment extends Fragment {
                 yeniEkle(v);
             }
         });
+
     }
 
     @Override

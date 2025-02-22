@@ -1,4 +1,4 @@
-package com.cemalettinaltintas.yemekkitabi;
+package com.cemalettinaltintas.yemekkitabi.view;
 
 import android.Manifest;
 import android.content.Intent;
@@ -19,7 +19,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.transition.Visibility;
+import androidx.navigation.NavDirections;
+import androidx.navigation.Navigation;
+import androidx.room.Room;
+
 
 import android.provider.MediaStore;
 import android.view.LayoutInflater;
@@ -28,8 +31,12 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.cemalettinaltintas.yemekkitabi.databinding.FragmentTarifBinding;
+import com.cemalettinaltintas.yemekkitabi.model.Tarif;
+import com.cemalettinaltintas.yemekkitabi.roomdb.TarifDao;
+import com.cemalettinaltintas.yemekkitabi.roomdb.TarifDatabase;
 import com.google.android.material.snackbar.Snackbar;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 public class TarifFragment extends Fragment {
@@ -40,11 +47,14 @@ public class TarifFragment extends Fragment {
     Uri secilenGorsel;
     Bitmap secilenBitmap;
     String bilgi;
-
+    TarifDao tarifDao;
+    TarifDatabase db;
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         registerLaunher();
+        db= Room.databaseBuilder(requireContext(),TarifDatabase.class,"Tarifler").build();
+        tarifDao=db.tarifDao();
     }
 
     @Override
@@ -64,7 +74,7 @@ public class TarifFragment extends Fragment {
         binding.silButton.setOnClickListener(this::sil);
 
         if (getArguments()!=null){
-            bilgi=TarifFragmentArgs.fromBundle(getArguments()).getBilgi();
+            bilgi= TarifFragmentArgs.fromBundle(getArguments()).getBilgi();
             binding.silButton.setEnabled(false);
             binding.kaydetButton.setEnabled(true);
             binding.isimText.setText("");
@@ -76,9 +86,27 @@ public class TarifFragment extends Fragment {
     }
 
     public void kaydet(View view) {
+        String isim=binding.isimText.getText().toString();
+        String malzeme=binding.malzemeText.getText().toString();
+        if (secilenBitmap!=null){
+            Bitmap kucukBitmap=kucukBitmapOlustur(secilenBitmap,300);
+            ByteArrayOutputStream outputStream=new ByteArrayOutputStream();
+            kucukBitmap.compress(Bitmap.CompressFormat.PNG,50,outputStream);
+            byte[] byteDizisi=outputStream.toByteArray();
+            Tarif tarif=new Tarif(isim,malzeme,byteDizisi);
 
+            //Threading
+
+
+        }
     }
 
+    private void handleResponseForInsert(){
+        //Bir önceki fragmenta dön.
+        NavDirections action= TarifFragmentDirections.actionTarifFragmentToListeFragment();
+        Navigation.findNavController(requireView()).navigate(action);
+
+    }
     public void gorselSec(View view) {
         if (Build.VERSION.SDK_INT>=Build.VERSION_CODES.TIRAMISU){
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
@@ -172,7 +200,23 @@ public class TarifFragment extends Fragment {
         });
 
     }
+    public Bitmap kucukBitmapOlustur(Bitmap image, int maximumSize) {
 
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        float bitmapRatio = (float) width / (float) height;
+
+        if (bitmapRatio > 1) {
+            width = maximumSize;
+            height = (int) (width / bitmapRatio);
+        } else {
+            height = maximumSize;
+            width = (int) (height * bitmapRatio);
+        }
+
+        return Bitmap.createScaledBitmap(image,width,height,true);
+    }
     @Override
     public void onDestroyView() {
         super.onDestroyView();
