@@ -9,17 +9,20 @@ import com.cemalettinaltintas.yemekkitabi.model.Tarif;
 
 import java.util.List;
 
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Flowable;
+
 @Dao
 public interface TarifDao {
     @Query("SELECT * FROM Tarif")
-    List<Tarif> getAll();
+    Flowable<List<Tarif>> getAll();
 
     @Query("SELECT * FROM Tarif WHERE id=:id")
-    Tarif findById(int id);
+    Flowable<Tarif> findById(int id);
 
     @Insert
-    void insert(Tarif tarif);
+    Completable insert(Tarif tarif);
 
     @Delete
-    void delete(Tarif tarif);
+    Completable delete(Tarif tarif);
 }

@@ -65,10 +65,12 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
 
-    implementation(libs.androidx.room.runtime)
+    val room_version = "2.6.1"
 
-    annotationProcessor(libs.androidx.room.compiler)
+    implementation("androidx.room:room-runtime:$room_version")
+    annotationProcessor("androidx.room:room-compiler:$room_version")
+    implementation("androidx.room:room-rxjava3:$room_version")
+    implementation("io.reactivex.rxjava3:rxandroid:3.0.2")
 
-    implementation(libs.androidx.room.rxjava3)
 
 }

@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageDecoder;
 import android.net.Uri;
 import android.os.Build;
@@ -39,6 +40,10 @@ import com.google.android.material.snackbar.Snackbar;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+
 public class TarifFragment extends Fragment {
     private FragmentTarifBinding binding;
 
@@ -49,6 +54,8 @@ public class TarifFragment extends Fragment {
     String bilgi;
     TarifDao tarifDao;
     TarifDatabase db;
+    Tarif secilenTarif;
+    private final CompositeDisposable compositeDisposable=new CompositeDisposable();
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -74,17 +81,37 @@ public class TarifFragment extends Fragment {
         binding.silButton.setOnClickListener(this::sil);
 
         if (getArguments()!=null){
+
             bilgi= TarifFragmentArgs.fromBundle(getArguments()).getBilgi();
-            binding.silButton.setEnabled(false);
-            binding.kaydetButton.setEnabled(true);
-            binding.isimText.setText("");
-            binding.malzemeText.setText("");
-        }else{
-            binding.silButton.setEnabled(true);
-            binding.kaydetButton.setEnabled(false);
+            if (bilgi=="yeni"){
+                //yeni tarif eklenecek
+                secilenTarif=null;
+                binding.silButton.setEnabled(false);
+                binding.kaydetButton.setEnabled(true);
+                binding.isimText.setText("");
+                binding.malzemeText.setText("");
+            }else{
+                //eski eklenmiş tarif gösterilecek
+
+                binding.silButton.setEnabled(true);
+                binding.kaydetButton.setEnabled(false);
+                int id=TarifFragmentArgs.fromBundle(getArguments()).getId();
+                compositeDisposable.add(
+                        tarifDao.findById(id)
+                                .subscribeOn(Schedulers.io())
+                                .observeOn(AndroidSchedulers.mainThread())
+                                .subscribe(this::handleResponse)
+                );
+            }
         }
     }
-
+    void handleResponse(Tarif tarif){
+        binding.isimText.setText(tarif.isim);
+        binding.malzemeText.setText(tarif.malzeme);
+        Bitmap bitmap= BitmapFactory.decodeByteArray(tarif.gorsel,0,tarif.gorsel.length);
+        binding.imageView.setImageBitmap(bitmap);
+        secilenTarif=tarif;
+    }
     public void kaydet(View view) {
         String isim=binding.isimText.getText().toString();
         String malzeme=binding.malzemeText.getText().toString();
@@ -96,7 +123,12 @@ public class TarifFragment extends Fragment {
             Tarif tarif=new Tarif(isim,malzeme,byteDizisi);
 
             //Threading
-
+            compositeDisposable.add(
+              tarifDao.insert(tarif)
+                      .subscribeOn(Schedulers.io())
+                      .observeOn(AndroidSchedulers.mainThread())
+                      .subscribe(this::handleResponseForInsert)
+            );
 
         }
     }
@@ -154,6 +186,14 @@ public class TarifFragment extends Fragment {
     }
 
     public void sil(View view) {
+        if (secilenTarif!=null){
+            compositeDisposable.add(
+                    tarifDao.delete(secilenTarif)
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe(this::handleResponseForInsert)
+            );
+        }
     }
 
     public void registerLaunher() {
@@ -221,5 +261,6 @@ public class TarifFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+        compositeDisposable.clear();
     }
 }
